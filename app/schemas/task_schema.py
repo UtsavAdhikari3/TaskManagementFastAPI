@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
+from enum import Enum
 
 
 class TaskCreate(BaseModel):
@@ -24,3 +25,12 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TaskStatus(str, Enum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+
+
+class TaskStatusUpdate(BaseModel):
+    status: TaskStatus

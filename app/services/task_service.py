@@ -79,3 +79,47 @@ def get_task_by_id(db: Session, task_id: int, current_user: User):
         status_code=status.HTTP_403_FORBIDDEN,
         detail="You do not have permission to view this task"
     )
+
+
+def update_task_status(db: Session, task_id: int, new_status: str, current_user: User):
+    task = db.query(Task).filter(Task.id == task_id).first()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
+    role_name = current_user.role.name
+
+    can_update = False
+
+    if role_name == "ADMIN":
+        can_update = True
+
+    elif role_name == "MANAGER":
+        if task.created_by == current_user.id or task.assigned_to == current_user.id:
+            can_update = True
+
+    elif role_name == "USER":
+        if task.assigned_to == current_user.id:
+            can_update = True
+
+    if not can_update:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to update this task status"
+        )
+
+    if task.status == "COMPLETED" and new_status != "COMPLETED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completed tasks cannot be moved back to another status"
+        )
+
+    task.status = new_status
+
+    db.commit()
+    db.refresh(task)
+
+    return task
