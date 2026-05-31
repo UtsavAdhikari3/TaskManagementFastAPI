@@ -1,0 +1,26 @@
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class TaskCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assigned_to: Optional[int] = None
+
+
+class TaskResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    status: str
+    due_date: Optional[datetime]
+    assigned_to: Optional[int]
+    created_by: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
