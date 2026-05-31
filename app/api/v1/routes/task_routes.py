@@ -4,12 +4,22 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.task_schema import TaskCreate, TaskResponse, TaskStatusUpdate
+from app.schemas.task_schema import (
+    TaskCreate,
+    TaskResponse,
+    TaskStatusUpdate,
+    TaskUpdate,
+    TaskAssign,
+)
+
 from app.services.task_service import (
     create_task,
     get_tasks_for_user,
     get_task_by_id,
     update_task_status,
+    update_task,
+    assign_task,
+    delete_task,
 )
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -45,6 +55,20 @@ def retrieve_task(
     return get_task_by_id(db, task_id, current_user)
 
 
+@router.patch("/{task_id}/assign", response_model=TaskResponse)
+def assign_existing_task(
+    task_id: int,
+    assign_data: TaskAssign,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return assign_task(
+        db=db,
+        task_id=task_id,
+        assigned_to=assign_data.assigned_to,
+        current_user=current_user
+    )
+
 @router.patch("/{task_id}/status", response_model=TaskResponse)
 def change_task_status(
     task_id: int,
@@ -58,3 +82,23 @@ def change_task_status(
         new_status=status_data.status.value,
         current_user=current_user
     )
+
+@router.patch("/{task_id}", response_model=TaskResponse)
+def update_existing_task(
+    task_id: int,
+    task_data: TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return update_task(db, task_id, task_data, current_user)
+
+
+
+
+@router.delete("/{task_id}")
+def remove_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return delete_task(db, task_id, current_user)

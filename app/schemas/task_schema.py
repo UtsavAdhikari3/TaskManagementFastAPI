@@ -34,3 +34,12 @@ class TaskStatus(str, Enum):
 
 class TaskStatusUpdate(BaseModel):
     status: TaskStatus
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+
+class TaskAssign(BaseModel):
+    assigned_to: int

@@ -13,7 +13,7 @@ def create_task(db: Session, task_data: TaskCreate, current_user: User):
             detail="Only ADMIN and MANAGER can create tasks"
         )
 
-    if task_data.assigned_to:
+    if task_data.assigned_to is not None:
         assigned_user = db.query(User).filter(User.id == task_data.assigned_to).first()
 
         if not assigned_user:
@@ -123,3 +123,89 @@ def update_task_status(db: Session, task_id: int, new_status: str, current_user:
     db.refresh(task)
 
     return task
+
+
+def update_task(db: Session, task_id: int, task_data, current_user: User):
+    task = db.query(Task).filter(Task.id == task_id).first()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
+    role_name = current_user.role.name
+
+    if role_name == "ADMIN":
+        pass
+    elif role_name == "MANAGER" and task.created_by == current_user.id:
+        pass
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to update this task"
+        )
+
+    update_data = task_data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(task, field, value)
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+
+def assign_task(db: Session, task_id: int, assigned_to: int, current_user: User):
+    task = db.query(Task).filter(Task.id == task_id).first()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
+    role_name = current_user.role.name
+
+    if role_name not in ["ADMIN", "MANAGER"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only ADMIN and MANAGER can assign tasks"
+        )
+
+    assigned_user = db.query(User).filter(User.id == assigned_to).first()
+
+    if not assigned_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assigned user not found"
+        )
+
+    task.assigned_to = assigned_to
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+
+def delete_task(db: Session, task_id: int, current_user: User):
+    task = db.query(Task).filter(Task.id == task_id).first()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
+    if current_user.role.name != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only ADMIN can delete tasks"
+        )
+
+    db.delete(task)
+    db.commit()
+
+    return {"message": "Task deleted successfully"}
